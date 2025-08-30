@@ -1,0 +1,222 @@
+<canvas id="minimapa" width="400" height="320"></canvas>
+<!-- classes -->
+
+<script>
+
+    class Player {
+        constructor(name, x, y) {
+            this.name = name;
+            this.x = x;
+            this.y = y;
+            this.size = 5
+            this.a = 0;//angle
+            this.speed = 1;
+            this.coliders = [];
+        }
+        draw(ctx) {
+            ctx.fillStyle = "blue";
+            //triangulo
+            ctx.beginPath();
+            // Ponto central do triângulo
+            const centerX = this.x;
+            const centerY = this.y;
+
+            // Tamanho do triângulo
+            const size = 10;
+
+            // Ângulo em radianos (converta de graus se necessário: angleInRadians = angleInDegrees * Math.PI/180)
+            const angle = this.a; // ângulo em radianos
+
+            // Calcular os três pontos do triângulo
+            const point1X = centerX + size * Math.cos(angle);
+            const point1Y = centerY + size * Math.sin(angle);
+
+            const point2X = centerX + size / 2 * Math.cos(angle + 2.1); // 120 graus (2π/3)
+            const point2Y = centerY + size / 2 * Math.sin(angle + 2.1);
+
+            const point3X = centerX + size / 2 * Math.cos(angle - 2.1); // -120 graus (-2π/3)
+            const point3Y = centerY + size / 2 * Math.sin(angle - 2.1);
+
+            // Desenhar o triângulo
+            ctx.moveTo(point1X, point1Y);
+            ctx.lineTo(point2X, point2Y);
+            ctx.lineTo(point3X, point3Y);
+            ctx.closePath();
+            ctx.fill();
+        }
+    
+        Rotate(angle) {
+            this.a += 0.05*  angle;
+        }
+        Move(mult){
+            this.x += Math.cos(this.a) * this.speed * mult;
+            
+
+            //check collision with boxes
+            this.coliders.forEach(box => {
+                if (this.x < box.x + box.width &&
+                    this.x + this.size > box.x &&
+                    this.y < box.y + box.height &&
+                    this.y + this.size > box.y) {
+                    // Collision detected
+                    this.x -= Math.cos(this.a) * this.speed * mult;
+                }
+            });
+this.y += Math.sin(this.a) * this.speed * mult;            
+
+            //check collision with boxes
+            this.coliders.forEach(box => {
+                if (this.x < box.x + box.width &&
+                    this.x + this.size > box.x &&
+                    this.y < box.y + box.height &&
+                    this.y + this.size > box.y) {
+                    // Collision detected
+                    this.y -= Math.sin(this.a) * this.speed * mult;
+                }
+            });
+
+        }
+        SetColiders(colider){
+            this.coliders = colider;
+        }
+    }
+
+    class Box {
+        constructor(x, y, width, height, color, border) {
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+            this.color = color;
+            this.border = border;
+        }
+
+        draw(ctx) {
+            ctx.fillStyle = this.color;
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+            ctx.strokeStyle = this.border;
+
+        }
+    }
+
+    class MiniMap {
+        constructor() {
+            this.boxes = [];
+        }
+        GetColiders() {
+            return this.boxes;
+        }
+
+        AddBox(box) {
+            this.boxes.push(box);
+        }
+
+        draw(ctx) {
+            this.boxes.forEach(box => box.draw(ctx));
+        }
+    }
+
+    class InputControle{
+        constructor(){
+            this.keys = {};
+            document.addEventListener('keydown', (event) => {
+                this.keys[event.key] = true;
+            });
+            document.addEventListener('keyup', (event) => {
+                this.keys[event.key] = false;
+            });
+        }
+
+        isKeyPressed(key) {
+            return this.keys[key] || false;
+        }
+    }
+</script>
+<!-- mini mapa -->
+
+<script>
+    const canvas = document.getElementById("minimapa");
+    const ctx = canvas.getContext("2d");
+
+   
+    const miniMapa = new MiniMap();
+    const player = new Player("you", 176, 43);
+    const Input = new InputControle();
+    function Setup(){
+
+    player.SetColiders(miniMapa.GetColiders());
+    //create parede
+    miniMapa.AddBox(new Box(0, 0.75403088, 150.94513, 75.757355, "white", "black"));
+    miniMapa.AddBox(new Box(150.94513, 0.75403088, 66.643684, 18.796942, "white", "black"));
+    miniMapa.AddBox(new Box(217.58882, 0.75403088, 63.79567, 70.63092, "white", "black"));
+    miniMapa.AddBox(new Box(281.38452, 0.75403088, 128.61549, 101.95915, "white", "black"));
+    miniMapa.AddBox(new Box(345.69223, 102.7132, 64.307739, 224.99365, "white", "black"));
+    miniMapa.AddBox(new Box(275.11884, 327.70682, 134.88113, 37.593891, "white", "black"));
+    miniMapa.AddBox(new Box(250.62587, 357.32626, 159.3741, 60.37804, "white", "black"));
+    miniMapa.AddBox(new Box(0, 76.511383, 16.11084, 78.906723, "white", "black"));
+    miniMapa.AddBox(new Box(0, 155.41811, 31.41614, 84.581924, "white", "black"));
+    miniMapa.AddBox(new Box(0, 240, 22.319239, 70.3339, "white", "black"));
+    miniMapa.AddBox(new Box(0, 310.33389, 74.618156, 21.929796, "white", "black"));
+    miniMapa.AddBox(new Box(68.637306, 332.2637, 87.43425, 32.752239, "white", "black"));
+    miniMapa.AddBox(new Box(156.07155, 365.0159, 31.328241, 52.688396, "white", "black"));
+    miniMapa.AddBox(new Box(156.07155, 417.70432, 119.04729, 39.302719, "white", "black"));
+    miniMapa.AddBox(new Box(158.9196, 102.14358, 46.080406, 127.59132, "white", "black"));
+    miniMapa.AddBox(new Box(222.71524, 102.14358, 50.125172, 25.062593, "white", "black"));
+    miniMapa.AddBox(new Box(222.71524, 139.73747, 58.669254, 26.201792, "white", "black"));
+    miniMapa.AddBox(new Box(240.37296, 165.93927, 71.200531, 63.79565, "white", "black"));
+    miniMapa.AddBox(new Box(133.57219, 136.31984, 25.347406, 52.403591, "white", "black"));
+    miniMapa.AddBox(new Box(111.64243, 136.31984, 21.929756, 26.201796, "white", "black"));
+    miniMapa.AddBox(new Box(111.64243, 104.13718, 27.910612, 20.220947, "white", "black"));
+    miniMapa.AddBox(new Box(53.542797, 136.31984, 40.157101, 26.201796, "white", "black"));
+    miniMapa.AddBox(new Box(53.542797, 162.52162, 27.910606, 110.78801, "white", "black"));
+    miniMapa.AddBox(new Box(81.453407, 210.36839, 32.467442, 77.181374, "white", "black"));
+    miniMapa.AddBox(new Box(133.57219, 204.67233, 12.673703, 86.010239, "white", "black"));
+    miniMapa.AddBox(new Box(146.24588, 250.52547, 58.754112, 40.157101, "white", "black"));
+    miniMapa.AddBox(new Box(181.13414, 325.14365, 54.112396, 18.796942, "white", "black"));
+    miniMapa.AddBox(new Box(198.22226, 301.22028, 49.270767, 23.923382, "white", "black"));
+    miniMapa.AddBox(new Box(242.36661, 253.08871, 30.473827, 27.341003, "white", "black"));
+    miniMapa.AddBox(new Box(265.15076, 280.42969, 31.328234, 20.790535, "white", "black"));
+    miniMapa.AddBox(new Box(287.08051, 227.17169, 9.3984814, 31.043432, "white", "black"));
+    }
+   
+    function Draw(){
+        ctx.reset();
+        //brackground
+         ctx.fillStyle = "#bf925dff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        miniMapa.draw(ctx);
+        player.draw(ctx);
+        if(Input.isKeyPressed("ArrowLeft")){
+            player.Rotate(-1);
+        }
+        if(Input.isKeyPressed("ArrowRight")){
+            player.Rotate(1);
+        }
+        if(Input.isKeyPressed("ArrowUp")){
+            player.Move(1);
+        }
+        if(Input.isKeyPressed("ArrowDown")){
+            player.Move(-1);
+        }
+
+    }
+
+
+
+    Setup();
+    setInterval(Draw, 1000 / 60);
+
+
+ /*
+    const rects = document.querySelectorAll('rect');
+let output = '';
+rects.forEach(rect =>{
+const x = rect.getAttribute('x');
+const y = rect.getAttribute('y');
+const width = rect.getAttribute('width');
+const height = rect.getAttribute('height');
+output+=`miniMapa.AddBox(new Box(${x}, ${y}, ${width}, ${height}, "white", "black"));\n`;
+});
+console.log(output);*/
+</script>

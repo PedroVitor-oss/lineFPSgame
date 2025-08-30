@@ -1,24 +1,14 @@
-const { app } = require("./src/app");
-const { createHome,createStyleHome } = require("./components/home");
+const { app,server,io} = require("./src/app");
+const deashborad = require("./src/routes/Deashboard");
+const game = require('./src/routes/Game');
 const { port } = require("./config.json");
 
 app.get("/",(req,res)=>{
-
-    const isMobile = req.headers['user-agent'].includes("Mobile");
-    
-
-    res.render("home",
-    {
-        title:"app node hbs",
-        isMobile,
-        Home:createHome("Seja Bem Vindo","abra o index.js para começar aprogramar seu projeto"),
-        htmlStyles:[
-            {css:createStyleHome(isMobile)},
-        ],
-        stylesMoblile:[
-           
-        ]
-    })
+    res.send("ok");
 })
 
-app.listen(port,console.log("aberto  em https://localhost:"+port));
+app.use("/deashboard",deashborad);
+app.use("/game",game);
+app.set("socketio", io);   
+
+server.listen(port,console.log("aberto  em https://localhost:"+port));
