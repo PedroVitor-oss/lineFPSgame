@@ -9,13 +9,23 @@
         top: 50vh;
         left: 50vw;
         transform: translate(-50%, -50%);
-        width:100vw;
-        height: 100vh;z-index: -1;
+        width: 100vw;
+        height: 100vh;
+        z-index: -1;
+    }
+
+    .ui {
+        position: absolute;
+        z-index: 2;
     }
 </style>
 
-<canvas id="minimapa" width="400" height="320"></canvas>
+<canvas id="minimapa" width="400" height="400"></canvas>
 <canvas id="game3d" width="1000" height="600"></canvas>
+<div class="ui">
+
+    <span id="player-list"></span>
+</div>
 <!-- classes -->
 
 <script>
@@ -65,8 +75,8 @@
         Rotate(angle) {
             this.a += 0.05 * angle;
         }
-        HorizontalMove(mult){
-            this.x += Math.cos(this.a+(90 * Math.PI/180)) * this.speed * mult;
+        HorizontalMove(mult) {
+            this.x += Math.cos(this.a + (90 * Math.PI / 180)) * this.speed * mult;
             //check collision with boxes
             this.coliders.forEach(box => {
                 if (this.x < box.x + box.width &&
@@ -74,11 +84,11 @@
                     this.y < box.y + box.height &&
                     this.y + this.size > box.y) {
                     // Collision detected
-                    this.x -= Math.cos(this.a+(90 * Math.PI/180)) * this.speed * mult;
+                    this.x -= Math.cos(this.a + (90 * Math.PI / 180)) * this.speed * mult;
                 }
             });
 
-             this.y += Math.sin(this.a+(90 * Math.PI/180)) * this.speed * mult;
+            this.y += Math.sin(this.a + (90 * Math.PI / 180)) * this.speed * mult;
 
             //check collision with boxes
             this.coliders.forEach(box => {
@@ -87,7 +97,7 @@
                     this.y < box.y + box.height &&
                     this.y + this.size > box.y) {
                     // Collision detected
-                    this.y -= Math.sin(this.a+(90 * Math.PI/180)) * this.speed * mult;
+                    this.y -= Math.sin(this.a + (90 * Math.PI / 180)) * this.speed * mult;
                 }
             });
         }
@@ -222,6 +232,36 @@
 
 </script>
 <!-- mini mapa -->
+<script src="https://cdn.socket.io/4.8.1/socket.io.min.js"
+    integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+"
+    crossorigin="anonymous"></script>
+<script>
+    const socket = io();
+
+    let playersInGame = [];
+    socket.on("connect", () => {
+        console.log("Conectado ao servidor com ID:", socket);
+    });
+
+    socket.on("setMydata", data => {
+        player.x = data.x;
+        player.y = data.y;
+        player.name = data.name;
+    })
+
+    socket.on("newPlayer", (players) => {
+        $("#player-list").html(`${players.length}`)
+        //console.log("Jogadores atuais:", players);
+        playersInGame = []
+        for (p of players) {
+            if(p.name != player.name){
+                playersInGame.push(new Player(p.name, p.x, p.y));
+            }
+        }
+        // otherPlayers = players.filter(p => p.name !== "you");
+    });
+</script>
+
 
 <script>
     const canvas = document.getElementById("minimapa");
@@ -233,28 +273,19 @@
     const miniMapa = new MiniMap();
     const player = new Player("you", 176, 43);
     const Input = new InputControle();
+    //const otherPlayer = new Player("other", 212, 380);
+
     //freeze mouse end no show him
     document.addEventListener("mousedown", (event) => {
         canvas3d.requestPointerLock();
     });
     document.addEventListener("mousemove", (event) => {
-        
-            const movementX = event.movementX || 0;
-            player.Rotate(movementX * 0.1);
-        
-    });
-    document.addEventListener("pointerlockchange", () => {
-        if (document.pointerLockElement === canvas3d) {
-            // Pointer is locked
-        } else {
-            // Pointer is unlocked
-        }
+        const movementX = event.movementX || 0;
+        player.Rotate(movementX * 0.1);
     });
 
     function Setup() {
 
-
-        player.SetColiders(miniMapa.GetColiders());
         //create parede
         miniMapa.AddBox(new Box(0, 0.75403088, 150.94513, 75.757355, "white", "black"));
         miniMapa.AddBox(new Box(150.94513, 0.75403088, 66.643684, 18.796942, "white", "black"));
@@ -287,6 +318,8 @@
         miniMapa.AddBox(new Box(242.36661, 253.08871, 30.473827, 27.341003, "white", "black"));
         miniMapa.AddBox(new Box(265.15076, 280.42969, 31.328234, 20.790535, "white", "black"));
         miniMapa.AddBox(new Box(287.08051, 227.17169, 9.3984814, 31.043432, "white", "black"));
+
+        player.SetColiders(miniMapa.GetColiders());
     }
 
     function Draw() {
@@ -299,19 +332,24 @@
         ctx3d.fillStyle = "gray";
         ctx3d.fillRect(0, 0, canvas3d.width, canvas3d.height);
         //chao
-        for (let i = 0; i < canvas3d.height/2; i += 10) {
-            const darkness = Math.min(1, i / (canvas3d.height/2)); // 0 a 1
+        for (let i = 0; i < canvas3d.height / 2; i += 10) {
+            const darkness = Math.min(1, i / (canvas3d.height / 2)); // 0 a 1
 
             // Escurecer a cor azul baseado na distância
             const red = Math.floor(255 * (1 - darkness));
             const green = Math.floor(255 * (1 - darkness));
-            const blue = Math.floor(255 * (1 - darkness )); // Azul escurece
+            const blue = Math.floor(255 * (1 - darkness)); // Azul escurece
             ctx3d.fillStyle = `rgb(${red}, ${green}, ${blue})`;
-            ctx3d.fillRect(0, canvas3d.height-i, canvas3d.width, 10);
+            ctx3d.fillRect(0, canvas3d.height - i, canvas3d.width, 10);
         }
 
         miniMapa.draw(ctx);
+        for (play of playersInGame) {
+            play.draw(ctx);
+        }
+
         player.draw(ctx);
+        //otherPlayer.draw(ctx);
 
         //raycast
         let FOV = 1;
@@ -330,14 +368,34 @@
             // Escurecer a cor azul baseado na distância
             const red = Math.floor(128 * (1 - darkness));
             const green = Math.floor(128 * (1 - darkness));
-            const blue = Math.floor(128 * (1 - darkness )); // Azul escurece
+            const blue = Math.floor(128 * (1 - darkness)); // Azul escurece
 
             ctx3d.fillStyle = `rgb(${red}, ${green}, ${blue})`;
             ctx3d.fillRect((i + 30) * canvas3d.width / (60),
                 (canvas3d.height - wallHeight) / 2,
                 canvas3d.width / (60),
                 wallHeight);
+
+            //render players in 3d
+            colidersPLayers = [];
+            for (const p of playersInGame) {
+                colidersPLayers.push(new Box(p.x, p.y, p.size, p.size, "blue", "black"));
+            }
+            const rayObj = new Raycast(player.x, player.y, player.a + (i * (Math.PI / 180)), 100, colidersPLayers);
+            if (rayObj.hit && rayObj.distHit < ray.distHit) {
+                const distance = rayObj.distHit;
+                const wallHeight = (100 / distance) * 100;
+                ctx3d.fillStyle = "red";
+                ctx3d.fillRect((i + 30) * canvas3d.width / (60),
+                    (canvas3d.height - wallHeight) / 2,
+                    canvas3d.width / (60),
+                    wallHeight);
+            }
+
         }
+
+
+
         //moviment
         if (Input.isKeyPressed("a")) {
             player.HorizontalMove(-1);
@@ -351,6 +409,8 @@
         if (Input.isKeyPressed("s")) {
             player.Move(-1);
         }
+
+        socket.emit("playerMovement", player);
 
     }
 

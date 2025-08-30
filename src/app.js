@@ -2,7 +2,7 @@ const express = require("express");
 const app = express();
 const { port } = require('../config.json')
 const server = require('http').createServer(app);
-const io = app.get("socketio"); 
+const io = require("socket.io")(server);
 const path = require("path")
 app.use(express.static(path.join(__dirname,'public')));
 // console.log(__dirname)
