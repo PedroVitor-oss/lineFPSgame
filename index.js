@@ -4,12 +4,13 @@ const game = require('./src/routes/Game');
 const { port } = require("./config.json");
 
 let positionSpaw = [{ x: 179, y: 42 }, { x: 220, y: 381 }]
-
+let pontos = {p1:0,p2:0};
 let players = [
 ];
 class Player {
     constructor(name, x, y) {
         this.name = name;
+        this.grounp = 'default';
         this.x = x;
         this.y = y;
         this.size = 5
@@ -29,8 +30,9 @@ app.use("/game", game);
 io.on("connection", (socket) => {
 
     // Criação do jogador
-    let positionId = Math.floor(players.length / positionSpaw.length)
+    let positionId = Math.floor(players.length+1 / positionSpaw.length)
     socket.player = new Player("player" + socket.id, positionSpaw[positionId].x, positionSpaw[positionId].y);
+    socket.player.group = positionId%2==0?"blue":"red";
     players.push(socket.player);
     socket.emit("setMydata", socket.player);
     io.emit("newPlayer", players);
@@ -45,6 +47,15 @@ io.on("connection", (socket) => {
             io.emit("newPlayer", players);
         }
     });
+
+    socket.on("playerShot", (data) => {
+        let nameplayer = data.target;
+
+        io.emit("playerHit", { name: nameplayer, damage: 10 });
+    })
+    socket.on("playerDied",(data)=>{
+        io.emit("pontoFOR",data.group)
+    })
 
     //desconectar
     socket.on("disconnect", () => {

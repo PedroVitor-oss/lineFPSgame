@@ -12,9 +12,10 @@
 
     #game3d {
         position: absolute;
-        top: 50vh;
-        left: 50vw;
-        transform: translate(-50%, -50%);
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
         width: 100vw;
         height: 100vh;
         z-index: -1;
@@ -77,6 +78,20 @@
         z-index: 2;
         display: flex;
 
+        & .info {
+            & h2 {
+                padding-left: 4px;
+                margin: 0;
+            }
+
+            & span {
+                width: 200px;
+                display: block;
+                height: 20px;
+                background: #43ff43;
+            }
+        }
+
         & .arma {
             width: 50px;
             height: 50px;
@@ -92,19 +107,54 @@
                 height: 70%;
                 background: red;
             }
-            & .info
-            {
-                & h2{
-                        padding-left: 4px;
-    margin: 0;
-                }
-                & span{
-                    width: 200px;
-    display: block;
-    height: 20px;
-    background: #43ff43;
-                }
-            }
+
+
+        }
+    }
+
+
+    .tremer {
+        animation: tremer 0.1s;
+    }
+
+    .damage-indicator {
+        position: absolute;
+        width: 100vw;
+        height: 100vh;
+        z-index: 10;;
+        background-color: red;
+        animation: fadeout .5s;
+        opacity:0;
+        top:0
+    }
+    @keyframes fadeout {
+        0% {
+            opacity: 1;
+        }
+        100% {
+            opacity: 0;
+        }
+    }
+
+    @keyframes tremer {
+        0% {
+            transform: translate(0);
+        }
+
+        25% {
+            transform: translate(-0, -2px);
+        }
+
+        50% {
+            transform: translate(0px, 2px);
+        }
+
+        75% {
+            transform: translate(-0px, 2px);
+        }
+
+        100% {
+            transform: translate(0);
         }
     }
 </style>
@@ -134,12 +184,15 @@
 
     <span id="player-list"></span>
 </div>
+
 <!-- classes -->
 
 <script>
 
     class Player {
         constructor(name, x, y) {
+            this.group = 'default';
+            this.health = 200;
             this.name = name;
             this.x = x;
             this.y = y;
@@ -345,7 +398,10 @@
     crossorigin="anonymous"></script>
 <script>
     const socket = io();
-
+    let positionStarted ;
+    const player = new Player("you", 176, 43);
+     let pontosp1 = 0;
+    let pontosp2 = 0;
     let playersInGame = [];
     socket.on("connect", () => {
         console.log("Conectado ao servidor com ID:", socket);
@@ -355,6 +411,11 @@
         player.x = data.x;
         player.y = data.y;
         player.name = data.name;
+        player.group = data.group;
+
+        $(".info h2").text(`Player: ${player.name} - Group: ${player.group}`);
+
+        positionStarted = {x:player.x, y:player.y};
     })
 
     socket.on("newPlayer", (players) => {
@@ -368,6 +429,32 @@
         }
         // otherPlayers = players.filter(p => p.name !== "you");
     });
+    socket.on("playerHit", (data) => {
+        if (data.name === player.name) {
+            // Aplica dano ao jogador
+            player.health -= data.damage;
+
+            $("span.hp").width(`${player.health}px`);
+            $("body").append("<div class='damage-indicator'></div>");
+            if (player.health <= 0) {
+                // O jogador morreu
+                socket.emit("playerDied",{group:player.group=='blue'?"red":"blue"});
+                player.health = 200;
+                player.x = positionStarted.x;   
+                player.y = positionStarted.y;
+            }
+        }
+    })
+
+    socket.on("pontoFOR", (group) => {
+        if (group == 'blue') {
+            pontosp1++;
+            $(".placar .me h1").html(pontosp1)
+        } else {
+            pontosp2++;
+            $(".placar .other h1").html(pontosp2)
+        }
+    })
 </script>
 
 
@@ -377,19 +464,27 @@
     const canvas3d = document.getElementById("game3d");
     const ctx3d = canvas3d.getContext("2d");
 
+   
+
+    let centerY = 0;
+
+    let tiro = false;
 
     const miniMapa = new MiniMap();
-    const player = new Player("you", 176, 43);
+
     const Input = new InputControle();
     //const otherPlayer = new Player("other", 212, 380);
 
     //freeze mouse end no show him
     document.addEventListener("mousedown", (event) => {
         canvas3d.requestPointerLock();
+        tiro = true;
+        //alert("tiro")
     });
     document.addEventListener("mousemove", (event) => {
         const movementX = event.movementX || 0;
         player.Rotate(movementX * 0.1);
+        centerY -= event.movementY || 0;
     });
 
     function Setup() {
@@ -431,25 +526,27 @@
     }
 
     function Draw() {
+        $(".me h1").html(pontosp1)
         ctx.reset();
         ctx3d.reset();
         //brackground
         ctx.fillStyle = "#bf925dff";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        //background
-        ctx3d.fillStyle = "gray";
+        //background #D
+        ctx3d.fillStyle = "rgb(39, 54, 95)";
         ctx3d.fillRect(0, 0, canvas3d.width, canvas3d.height);
         //chao
-        for (let i = 0; i < canvas3d.height / 2; i += 10) {
+        for (let i = 0; i < canvas3d.height - ((canvas3d.height / 2) + centerY); i += 10) {
             const darkness = Math.min(1, i / (canvas3d.height / 2)); // 0 a 1
 
             // Escurecer a cor azul baseado na distância
-            const red = Math.floor(255 * (1 - darkness));
-            const green = Math.floor(255 * (1 - darkness));
-            const blue = Math.floor(255 * (1 - darkness)); // Azul escurece
+            const red = Math.floor(255 * (darkness));
+            const green = Math.floor(255 * (darkness));
+            const blue = Math.floor(255 * (darkness)); // Azul escurece
             ctx3d.fillStyle = `rgb(${red}, ${green}, ${blue})`;
-            ctx3d.fillRect(0, canvas3d.height - i, canvas3d.width, 10);
+            ctx3d.fillRect(0, ((canvas3d.height / 2) + centerY) + i, canvas3d.width, 10);
         }
+
 
         miniMapa.draw(ctx);
         for (play of playersInGame) {
@@ -480,7 +577,7 @@
 
             ctx3d.fillStyle = `rgb(${red}, ${green}, ${blue})`;
             ctx3d.fillRect((i + 30) * canvas3d.width / (60),
-                (canvas3d.height - wallHeight) / 2,
+                ((canvas3d.height - wallHeight) / 2) + centerY,
                 canvas3d.width / (60),
                 wallHeight);
 
@@ -491,11 +588,36 @@
             }
             const rayObj = new Raycast(player.x, player.y, player.a + (i * (Math.PI / 180)), 100, colidersPLayers);
             if (rayObj.hit && rayObj.distHit < ray.distHit) {
+
+
+                if (tiro) {
+                    if (i > -1.5 && i < 1.5) {
+                        // Encontrar o player atingido
+                        let playerAcertado = null;
+                        for (let idx = 0; idx < playersInGame.length; idx++) {
+                            const p = playersInGame[idx];
+                            // Verifica se a posição do impacto está dentro do player
+                            if (
+                                rayObj.endPointX >= p.x &&
+                                rayObj.endPointX <= p.x + p.size &&
+                                rayObj.endPointY >= p.y &&
+                                rayObj.endPointY <= p.y + p.size
+                            ) {
+                                playerAcertado = p;
+                                break;
+                            }
+                        }
+                        if (playerAcertado) {
+                            tiro = false;
+                            socket.emit("playerShot", { shooter: player.name, target: playerAcertado.name });
+                        }
+                    }
+                }
                 const distance = rayObj.distHit;
                 const wallHeight = (100 / distance) * 100;
                 ctx3d.fillStyle = "red";
                 ctx3d.fillRect((i + 30) * canvas3d.width / (60),
-                    (canvas3d.height - wallHeight) / 2,
+                    ((canvas3d.height - wallHeight) / 2) + centerY,
                     canvas3d.width / (60),
                     wallHeight);
             }
@@ -503,7 +625,7 @@
         }
 
 
-
+        tiro = false;
         //moviment
         if (Input.isKeyPressed("a")) {
             player.HorizontalMove(-1);
