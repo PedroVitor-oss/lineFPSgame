@@ -20,7 +20,9 @@ class Player {
     }
 }
 app.get("/", (req, res) => {
-    res.send("ok");
+    res.render("dashboard",{
+        numPlayer: players.length
+    })
 })
 
 app.use("/deashboard", deashborad);

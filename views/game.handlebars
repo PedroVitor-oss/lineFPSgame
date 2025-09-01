@@ -424,11 +424,14 @@
         playersInGame = []
         for (p of players) {
             if (p.name != player.name) {
-                playersInGame.push(new Player(p.name, p.x, p.y));
+                let np = new Player(p.name,p.x,p.y);
+                np.group = p.group;
+                playersInGame.push(np);
             }
         }
         // otherPlayers = players.filter(p => p.name !== "you");
     });
+        
     socket.on("playerHit", (data) => {
         if (data.name === player.name) {
             // Aplica dano ao jogador
@@ -533,15 +536,15 @@
         ctx.fillStyle = "#bf925dff";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         //background #D
-        ctx3d.fillStyle = "rgb(39, 54, 95)";
+        ctx3d.fillStyle = "#0b021699";
         ctx3d.fillRect(0, 0, canvas3d.width, canvas3d.height);
         //chao
         for (let i = 0; i < canvas3d.height - ((canvas3d.height / 2) + centerY); i += 10) {
             const darkness = Math.min(1, i / (canvas3d.height / 2)); // 0 a 1
-
+            //rgb(162, 89, 255)
             // Escurecer a cor azul baseado na distância
-            const red = Math.floor(255 * (darkness));
-            const green = Math.floor(255 * (darkness));
+            const red = Math.floor(162 * (darkness));
+            const green = Math.floor(89 * (darkness));
             const blue = Math.floor(255 * (darkness)); // Azul escurece
             ctx3d.fillStyle = `rgb(${red}, ${green}, ${blue})`;
             ctx3d.fillRect(0, ((canvas3d.height / 2) + centerY) + i, canvas3d.width, 10);
@@ -569,11 +572,11 @@
             // Calcular cor baseada na distância (quanto mais longe, mais escuro)
             const maxDistance = 100; // Distância máxima para escurecimento
             const darkness = Math.min(1, distance / maxDistance); // 0 a 1
-
+            //rgba(144, 59, 255, 0.6)
             // Escurecer a cor azul baseado na distância
-            const red = Math.floor(128 * (1 - darkness));
-            const green = Math.floor(128 * (1 - darkness));
-            const blue = Math.floor(128 * (1 - darkness)); // Azul escurece
+            const red = Math.floor(144 * (1 - darkness));
+            const green = Math.floor(59 * (1 - darkness));
+            const blue = Math.floor(255 * (1 - darkness)); // Azul escurece
 
             ctx3d.fillStyle = `rgb(${red}, ${green}, ${blue})`;
             ctx3d.fillRect((i + 30) * canvas3d.width / (60),
@@ -588,11 +591,7 @@
             }
             const rayObj = new Raycast(player.x, player.y, player.a + (i * (Math.PI / 180)), 100, colidersPLayers);
             if (rayObj.hit && rayObj.distHit < ray.distHit) {
-
-
-                if (tiro) {
-                    if (i > -1.5 && i < 1.5) {
-                        // Encontrar o player atingido
+// Encontrar o player atingido
                         let playerAcertado = null;
                         for (let idx = 0; idx < playersInGame.length; idx++) {
                             const p = playersInGame[idx];
@@ -607,7 +606,13 @@
                                 break;
                             }
                         }
+
+                if (tiro) {
+                    if (i > -1.5 && i < 1.5) {
+                        
                         if (playerAcertado) {
+                            console.log(playerAcertado)
+                            console.log(playersInGame)
                             tiro = false;
                             socket.emit("playerShot", { shooter: player.name, target: playerAcertado.name });
                         }
@@ -615,7 +620,7 @@
                 }
                 const distance = rayObj.distHit;
                 const wallHeight = (100 / distance) * 100;
-                ctx3d.fillStyle = "red";
+                ctx3d.fillStyle = playerAcertado.group;
                 ctx3d.fillRect((i + 30) * canvas3d.width / (60),
                     ((canvas3d.height - wallHeight) / 2) + centerY,
                     canvas3d.width / (60),

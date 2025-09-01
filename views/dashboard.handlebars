@@ -1,1 +1,87 @@
-{{{Home}}}
+<style>
+    body {
+    min-height: 100vh;
+    margin: 0;
+    font-family: 'Orbitron', 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(135deg, #1a0033 0%, #3a0066 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.container {
+    background: rgba(30, 0, 50, 0.85);
+    border-radius: 20px;
+    padding: 40px 60px;
+    box-shadow: 0 0 40px 10px #a259ff44, 0 0 0 2px #a259ff33;
+    text-align: center;
+}
+
+h1 {
+    font-size: 3rem;
+    color: #fff;
+    letter-spacing: 0.2em;
+    text-shadow: 0 0 10px #a259ff, 0 0 30px #a259ff99;
+    margin-bottom: 0.2em;
+}
+
+h2 {
+    font-size: 1.5rem;
+    color: #a259ff;
+    margin-bottom: 1em;
+    text-shadow: 0 0 8px #a259ff88;
+}
+
+.desc {
+    color: #e0c3fc;
+    margin-bottom: 2em;
+    font-size: 1.1rem;
+}
+
+.neon-btn {
+    display: inline-block;
+    padding: 16px 40px;
+    margin: 1em 0;
+    font-size: 1.2rem;
+    color: #fff;
+    background: transparent;
+    border: 2px solid #a259ff;
+    border-radius: 30px;
+    text-decoration: none;
+    letter-spacing: 0.1em;
+    box-shadow: 0 0 10px #a259ff, 0 0 40px #a259ff55;
+    transition: background 0.2s, box-shadow 0.2s, color 0.2s;
+    position: relative;
+}
+
+.neon-btn:hover, .neon-btn:focus {
+    background: #a259ff33;
+    color: #fff;
+    box-shadow: 0 0 20px #a259ff, 0 0 60px #a259ff99;
+    border-color: #fff;
+}
+
+.players {
+    color: #fff;
+    margin-top: 2em;
+    font-size: 1.1rem;
+    text-shadow: 0 0 8px #a259ff44;
+}
+
+.neon-num {
+    color: #a259ff;
+    font-weight: bold;
+    text-shadow: 0 0 10px #a259ff, 0 0 20px #a259ff99;
+}
+</style>
+
+
+<div class="container">
+        <h1>LFG</h1>
+        <h2>Lines FPS Game</h2>
+        <p class="desc">Um FPS renderizado por raycast com jogabilidade em tempo real.</p>
+        <a href="/game" class="neon-btn">Jogar Agora</a>
+        <p class="players">👾 Pessoas jogando: <span class="neon-num">{{numPlayer}}</span></p>
+        <p class="desc"> By Pedro Vitor</p>
+    </div>
+
