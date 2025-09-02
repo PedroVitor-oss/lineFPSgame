@@ -33,7 +33,7 @@ class PointControl {
 let positionSpaw = [{ x: 179, y: 42 }, { x: 220, y: 381 }]
 let pontos = { p1: 0, p2: 0 };
 let players = [];
-let surnames = ["Kaiser","Noa","christian","Alex","Jordan","Taylor"];
+let surnames = ["Kaiser", "Noa", "christian", "Alex", "Jordan", "Taylor"];
 let pointsControl = [new PointControl("point1", 64, 100), new PointControl("point2", 110, 182), new PointControl("point3", 317, 139), new PointControl("point4", 226, 244), new PointControl("point5", 48, 291), new PointControl("point6", 327, 303)];
 
 app.get("/", (req, res) => {
@@ -49,15 +49,15 @@ app.use("/game", game);
 io.on("connection", (socket) => {
 
     // Criação do jogador
-    let positionId = Math.floor(players.length + 1 / positionSpaw.length)
+    let positionId = players.length%2;
     socket.player = new Player("player" + socket.id, positionSpaw[positionId].x, positionSpaw[positionId].y);
     socket.player.group = positionId % 2 == 0 ? "blue" : "red";
     socket.player.surname = surnames[Math.floor(Math.random() * surnames.length)];
     players.push(socket.player);
     socket.emit("setMydata", {
-        player:socket.player,
-        pointsControl:pointsControl,
-        pontos:pontos
+        player: socket.player,
+        pointsControl: pointsControl,
+        pontos: pontos
     });
     io.emit("newPlayer", players);
     console.log("Novo cliente conectado:", socket.id);
@@ -80,16 +80,25 @@ io.on("connection", (socket) => {
     socket.on("playerDied", (data) => {
         io.emit("pontoFOR", data.group)
     })
-    socket.on("addPointControl", (data) => {
-        for(let p of pointsControl){
-            if(p.id === data.id){
-                p.influenceBlue = data.influenceBlue;
-                p.influenceRed = data.influenceRed;
+    socket.on("canIwin", (data) => {
+        let quantIwinn = 0;
+        for (let p of data) {
+            if (socket.player.group == "blue") {
+                if (p.influenceBlue > 90) {
+                    quantIwinn++;
+                }
+            } else {
+                if (p.influenceRed > 90) {
+                    quantIwinn++;
+                }
             }
+            // console.log("pointsControl",pointsControl);
         }
-        // console.log("pointsControl",pointsControl);
+        if (quantIwinn >= 5) {
+            console.log("alguem ganhou");
+            io.emit("finishGame", socket.player.group);
+        }
     })
-
     //desconectar
     socket.on("disconnect", () => {
         players = players.filter(p => p !== socket.player);

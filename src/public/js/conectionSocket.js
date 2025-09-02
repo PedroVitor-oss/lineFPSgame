@@ -1,4 +1,5 @@
 const socket = io();
+let finishGame = false;
 let positionStarted;
 const player = new Player("you", 176, 43);
 let pontosp1 = 0;
@@ -37,6 +38,11 @@ socket.on("updatePointControl", (data) => {
         pointsControl.push(new PointControl(point.id, point.x, point.y, point.borderColor + 0.01, point.influenceBlue, point.influenceRed));
     }
 
+})
+
+socket.on("finishGame",(group)=>{
+    finishGame = true;
+    alert(`time ${group} ganhou`);
 })
 
 socket.on("newPlayer", (players) => {
