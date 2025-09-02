@@ -121,16 +121,19 @@
         position: absolute;
         width: 100vw;
         height: 100vh;
-        z-index: 10;;
+        z-index: 10;
+        ;
         background-color: red;
         animation: fadeout .5s;
-        opacity:0;
-        top:0
+        opacity: 0;
+        top: 0
     }
+
     @keyframes fadeout {
         0% {
             opacity: 1;
         }
+
         100% {
             opacity: 0;
         }
@@ -157,6 +160,20 @@
             transform: translate(0);
         }
     }
+
+    table{
+        position: absolute;
+    top: 200px;
+    background: #80808085;
+    & th {
+        padding: 10px;
+        border-bottom: 1px solid #ccc;
+    }
+
+    & td {
+        padding: 10px;
+        border-bottom: 1px solid #ccc;
+    }
 </style>
 
 <canvas id="minimapa" width="400" height="400"></canvas>
@@ -182,7 +199,21 @@
         </div>
     </div>
 
-    <span id="player-list"></span>
+
+
+    <div class="playes-list">
+        <table>
+            <thead>
+                <tr>
+                    <th>blue group</th>
+                    <th>red group</th>
+                </tr>
+            </thead>
+            <tbody>
+
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <!-- classes -->
@@ -194,12 +225,17 @@
             this.group = 'default';
             this.health = 200;
             this.name = name;
+            this.surname;
             this.x = x;
             this.y = y;
             this.size = 5
             this.a = 0;//angle
             this.speed = 1;
             this.coliders = [];
+        }
+        setSurname(surname) {
+            this.surname = surname;
+            socket.emit("setSurname", surname);
         }
         draw(ctx) {
             ctx.fillStyle = "blue";
@@ -391,73 +427,41 @@
         }
     }
 
+    class PointControl {
+        constructor(id, x, y, b, r) {
+            this.id = id;
+
+            this.x = x;
+            this.y = y;
+
+            this.influenceBlue = 0;
+            this.influenceRed = 0;
+
+        }
+        draw(ctx) {
+            ctx.fillStyle = "yellow";
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, 10, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = "blue";
+            ctx.fillRect(this.x - 10, this.y - 20, 20 * (this.influenceBlue / 100), 5);
+
+            ctx.fillStyle = "red";
+            ctx.fillRect(this.x - 10, this.y - 10, 20 * (this.influenceRed / 100), 5);
+        }
+
+    }
+
 </script>
 <!-- mini mapa -->
 <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"
     integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+"
     crossorigin="anonymous"></script>
+
+<script src="/js/conectionSocket.js"></script>
 <script>
-    const socket = io();
-    let positionStarted ;
-    const player = new Player("you", 176, 43);
-     let pontosp1 = 0;
-    let pontosp2 = 0;
-    let playersInGame = [];
-    socket.on("connect", () => {
-        console.log("Conectado ao servidor com ID:", socket);
-    });
 
-    socket.on("setMydata", data => {
-        player.x = data.x;
-        player.y = data.y;
-        player.name = data.name;
-        player.group = data.group;
-
-        $(".info h2").text(`Player: ${player.name} - Group: ${player.group}`);
-
-        positionStarted = {x:player.x, y:player.y};
-    })
-
-    socket.on("newPlayer", (players) => {
-        $("#player-list").html(`${players.length}`)
-        //console.log("Jogadores atuais:", players);
-        playersInGame = []
-        for (p of players) {
-            if (p.name != player.name) {
-                let np = new Player(p.name,p.x,p.y);
-                np.group = p.group;
-                playersInGame.push(np);
-            }
-        }
-        // otherPlayers = players.filter(p => p.name !== "you");
-    });
-        
-    socket.on("playerHit", (data) => {
-        if (data.name === player.name) {
-            // Aplica dano ao jogador
-            player.health -= data.damage;
-
-            $("span.hp").width(`${player.health}px`);
-            $("body").append("<div class='damage-indicator'></div>");
-            if (player.health <= 0) {
-                // O jogador morreu
-                socket.emit("playerDied",{group:player.group=='blue'?"red":"blue"});
-                player.health = 200;
-                player.x = positionStarted.x;   
-                player.y = positionStarted.y;
-            }
-        }
-    })
-
-    socket.on("pontoFOR", (group) => {
-        if (group == 'blue') {
-            pontosp1++;
-            $(".placar .me h1").html(pontosp1)
-        } else {
-            pontosp2++;
-            $(".placar .other h1").html(pontosp2)
-        }
-    })
 </script>
 
 
@@ -467,7 +471,7 @@
     const canvas3d = document.getElementById("game3d");
     const ctx3d = canvas3d.getContext("2d");
 
-   
+    let savenumplayers = 0;
 
     let centerY = 0;
 
@@ -491,7 +495,7 @@
     });
 
     function Setup() {
-
+       
         //create parede
         miniMapa.AddBox(new Box(0, 0.75403088, 150.94513, 75.757355, "white", "black"));
         miniMapa.AddBox(new Box(150.94513, 0.75403088, 66.643684, 18.796942, "white", "black"));
@@ -538,6 +542,33 @@
         //background #D
         ctx3d.fillStyle = "#0b021699";
         ctx3d.fillRect(0, 0, canvas3d.width, canvas3d.height);
+
+        if(savenumplayers != playersInGame.length){
+            savenumplayers = playersInGame.length;
+        
+        }
+
+
+        for (let p of pointsControl) {
+
+            p.draw(ctx);
+
+            //se distancia do player para pointcontrol < 30 somar no grupo dele
+            if (Math.hypot(player.x - p.x, player.y - p.y) < 30) {
+                if (player.group == 'blue') {
+                    p.influenceBlue += 1;
+                    if (p.influenceBlue > 100) p.influenceBlue = 100;
+                    p.influenceRed -= 1;
+                    if (p.influenceRed < 0) p.influenceRed = 0;
+                } else {
+                    p.influenceRed += 1;
+                    if (p.influenceRed > 100) p.influenceRed = 100;
+                    p.influenceBlue -= 1;
+                    if (p.influenceBlue < 0) p.influenceBlue = 0;
+                }
+                socket.emit("addPointControl", p);
+            }
+        }
         //chao
         for (let i = 0; i < canvas3d.height - ((canvas3d.height / 2) + centerY); i += 10) {
             const darkness = Math.min(1, i / (canvas3d.height / 2)); // 0 a 1
@@ -591,25 +622,25 @@
             }
             const rayObj = new Raycast(player.x, player.y, player.a + (i * (Math.PI / 180)), 100, colidersPLayers);
             if (rayObj.hit && rayObj.distHit < ray.distHit) {
-// Encontrar o player atingido
-                        let playerAcertado = null;
-                        for (let idx = 0; idx < playersInGame.length; idx++) {
-                            const p = playersInGame[idx];
-                            // Verifica se a posição do impacto está dentro do player
-                            if (
-                                rayObj.endPointX >= p.x &&
-                                rayObj.endPointX <= p.x + p.size &&
-                                rayObj.endPointY >= p.y &&
-                                rayObj.endPointY <= p.y + p.size
-                            ) {
-                                playerAcertado = p;
-                                break;
-                            }
-                        }
+                // Encontrar o player atingido
+                let playerAcertado = null;
+                for (let idx = 0; idx < playersInGame.length; idx++) {
+                    const p = playersInGame[idx];
+                    // Verifica se a posição do impacto está dentro do player
+                    if (
+                        rayObj.endPointX >= p.x &&
+                        rayObj.endPointX <= p.x + p.size &&
+                        rayObj.endPointY >= p.y &&
+                        rayObj.endPointY <= p.y + p.size
+                    ) {
+                        playerAcertado = p;
+                        break;
+                    }
+                }
 
                 if (tiro) {
                     if (i > -1.5 && i < 1.5) {
-                        
+
                         if (playerAcertado) {
                             console.log(playerAcertado)
                             console.log(playersInGame)

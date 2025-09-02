@@ -3,13 +3,11 @@ const deashborad = require("./src/routes/Deashboard");
 const game = require('./src/routes/Game');
 const { port } = require("./config.json");
 
-let positionSpaw = [{ x: 179, y: 42 }, { x: 220, y: 381 }]
-let pontos = {p1:0,p2:0};
-let players = [
-];
+
 class Player {
     constructor(name, x, y) {
         this.name = name;
+        this.surname = "null"
         this.grounp = 'default';
         this.x = x;
         this.y = y;
@@ -19,8 +17,27 @@ class Player {
         this.coliders = [];
     }
 }
+class PointControl {
+    constructor(id, x, y) {
+        this.id = id;
+
+        this.x = x;
+        this.y = y;
+
+        this.influenceBlue = 0;
+        this.influenceRed = 0;
+
+    }
+}
+
+let positionSpaw = [{ x: 179, y: 42 }, { x: 220, y: 381 }]
+let pontos = { p1: 0, p2: 0 };
+let players = [];
+let surnames = ["Kaiser","Noa","christian","Alex","Jordan","Taylor"];
+let pointsControl = [new PointControl("point1", 64, 100), new PointControl("point2", 110, 182), new PointControl("point3", 317, 139), new PointControl("point4", 226, 244), new PointControl("point5", 48, 291), new PointControl("point6", 327, 303)];
+
 app.get("/", (req, res) => {
-    res.render("dashboard",{
+    res.render("dashboard", {
         numPlayer: players.length
     })
 })
@@ -32,11 +49,16 @@ app.use("/game", game);
 io.on("connection", (socket) => {
 
     // Criação do jogador
-    let positionId = Math.floor(players.length+1 / positionSpaw.length)
+    let positionId = Math.floor(players.length + 1 / positionSpaw.length)
     socket.player = new Player("player" + socket.id, positionSpaw[positionId].x, positionSpaw[positionId].y);
-    socket.player.group = positionId%2==0?"blue":"red";
+    socket.player.group = positionId % 2 == 0 ? "blue" : "red";
+    socket.player.surname = surnames[Math.floor(Math.random() * surnames.length)];
     players.push(socket.player);
-    socket.emit("setMydata", socket.player);
+    socket.emit("setMydata", {
+        player:socket.player,
+        pointsControl:pointsControl,
+        pontos:pontos
+    });
     io.emit("newPlayer", players);
     console.log("Novo cliente conectado:", socket.id);
 
@@ -55,8 +77,17 @@ io.on("connection", (socket) => {
 
         io.emit("playerHit", { name: nameplayer, damage: 10 });
     })
-    socket.on("playerDied",(data)=>{
-        io.emit("pontoFOR",data.group)
+    socket.on("playerDied", (data) => {
+        io.emit("pontoFOR", data.group)
+    })
+    socket.on("addPointControl", (data) => {
+        for(let p of pointsControl){
+            if(p.id === data.id){
+                p.influenceBlue = data.influenceBlue;
+                p.influenceRed = data.influenceRed;
+            }
+        }
+        // console.log("pointsControl",pointsControl);
     })
 
     //desconectar
