@@ -27,6 +27,7 @@ socket.on("setMydata", (data) => {
     $(".placar .me h1").html(pontosp1)
     $(".placar .other h1").html(pontosp2);
     $(".info h2").text(`Player: ${player.name} - Group: ${player.group}`);
+    $(".color").css("background",player.group)
 
     positionStarted = { x: player.x, y: player.y };
 
@@ -43,6 +44,8 @@ socket.on("updatePointControl", (data) => {
 socket.on("finishGame",(group)=>{
     finishGame = true;
     alert(`time ${group} ganhou`);
+    $(".container").css("display","block")
+    $(".container h1").text(`Parabéns! A equipe ${group} ganhou o jogo!`);
 })
 
 socket.on("newPlayer", (players) => {

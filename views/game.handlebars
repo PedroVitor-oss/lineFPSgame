@@ -1,184 +1,18 @@
-<style>
-    body {
-        margin: 0;
-        overflow: hidden;
-        background-color: black;
-    }
-
-    #minimapa {
-        scale: 0.5;
-        transform: translate(-50%, -50%);
-    }
-
-    #game3d {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        width: 100vw;
-        height: 100vh;
-        z-index: -1;
-    }
-
-    .ui {
-        position: absolute;
-        top: 0;
-        z-index: 2;
-        width: 100vw;
-        height: 100vh;
-    }
-
-    #mira {
-        position: absolute;
-        z-index: 5;
-        top: 50vh;
-        left: 50vw;
-        transform: translate(-50%, -50%);
-        width: 30px;
-
-
-    }
-
-    .placar {
-        display: flex;
-        position: absolute;
-        top: 10px;
-        left: 50vw;
-        transform: translateX(-50%);
-        background: rgb(39, 52, 78);
-        width: 200px;
-        height: 50px;
-
-        & h1 {
-            color: #fff;
-            margin: 6%;
-        }
-
-        & .me {
-            text-align: center;
-            background-color: rgb(115, 115, 255);
-            width: 90px;
-            margin-right: 20px;
-
-        }
-
-        & .other {
-            text-align: center;
-            background-color: rgb(255, 115, 115);
-            width: 90px;
-
-        }
-    }
-
-    .player-info {
-        position: absolute;
-        bottom: 20px;
-        left: 20px;
-        z-index: 2;
-        display: flex;
-
-        & .info {
-            & h2 {
-                padding-left: 4px;
-                margin: 0;
-            }
-
-            & span {
-                width: 200px;
-                display: block;
-                height: 20px;
-                background: #43ff43;
-            }
-        }
-
-        & .arma {
-            width: 50px;
-            height: 50px;
-            background: transparent;
-            border: 7px solid orange;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transform: rotate(45deg);
-
-            & .color {
-                width: 70%;
-                height: 70%;
-                background: red;
-            }
-
-
-        }
-    }
-
-
-    .tremer {
-        animation: tremer 0.1s;
-    }
-
-    .damage-indicator {
-        position: absolute;
-        width: 100vw;
-        height: 100vh;
-        z-index: 10;
-        ;
-        background-color: red;
-        animation: fadeout .5s;
-        opacity: 0;
-        top: 0
-    }
-
-    @keyframes fadeout {
-        0% {
-            opacity: 1;
-        }
-
-        100% {
-            opacity: 0;
-        }
-    }
-
-    @keyframes tremer {
-        0% {
-            transform: translate(0);
-        }
-
-        25% {
-            transform: translate(-0, -2px);
-        }
-
-        50% {
-            transform: translate(0px, 2px);
-        }
-
-        75% {
-            transform: translate(-0px, 2px);
-        }
-
-        100% {
-            transform: translate(0);
-        }
-    }
-
-    table {
-        position: absolute;
-        top: 200px;
-        background: #80808085;
-
-        & th {
-            padding: 10px;
-            border-bottom: 1px solid #ccc;
-        }
-
-        & td {
-            padding: 10px;
-            border-bottom: 1px solid #ccc;
-        }
-</style>
+<link rel="stylesheet" href="/css/game.css">
 
 <canvas id="minimapa" width="400" height="400"></canvas>
 <canvas id="game3d" width="1000" height="600"></canvas>
+<div class="container">
+    <h1>Parabéns! A equipe</h1>
+    <div class="winner-name" id="winner-team">Vencedora</div>
+    <h1>ganhou o jogo!</h1>
+
+    <!-- SVG do Troféu -->
+   
+    <p class="celebrations">Celebremos esta grande vitória!</p>
+
+    <a href="/" class="btn-home">Voltar ao Início</a>
+</div>
 <div class="ui">
     <img src="/img/mira.svg" alt="" srcset="" id="mira">
     <div class="placar">
@@ -200,8 +34,20 @@
         </div>
     </div>
 
+    <div class="pause">
+        <h1>Pause</h1>
+        <div class="cont-input">
+            <input type="text" id="surname" placeholder="Apelido">
+            <button onclick="SetSurname()">Mudar Nome</button>
+        </div>
+        <div class="cont-input">
+            <span class="title">Sensitivity</span>
+            <input type="range" name="sencible" id="sencible" minlength="1" maxlength="100" value="10">
+        </div>
+        <button onclick="ClosePauseMenu()">fechar menu pause</button>
+    </div>
 
-    <input type="range" name="sencible" id="sencible" maxlength="100">
+
 
 
     <div class="playes-list">
@@ -222,7 +68,189 @@
 <!-- classes -->
 
 <script>
+    class ShootingEffectSystem {
+        constructor(ctx3d, canvas3d) {
+            this.ctx = ctx3d;
+            this.canvas = canvas3d;
+            this.effects = [];
+            this.muzzleFlashIntensity = 0;
+            this.screenShakeIntensity = 0;
+            this.screenShakeOffset = { x: 0, y: 0 };
+        }
 
+        // Chamar esta função quando o jogador atirar
+        triggerShot() {
+            // Efeito de flash na arma
+            this.muzzleFlashIntensity = 1.0;
+
+            // Efeito de tremor de tela
+            this.screenShakeIntensity = 5;
+
+            // Adicionar efeito de traço balístico
+            this.addTracerEffect();
+
+            // Adicionar partículas de fumaça
+            this.addSmokeParticles();
+        }
+
+        addTracerEffect() {
+            // Criar um traço balístico que desaparece gradualmente
+            this.effects.push({
+                type: 'tracer',
+                life: 1.0, // Vida máxima do efeito (em segundos)
+                width: 2,
+                color: 'rgba(255, 200, 50, 0.8)',
+                // O traço vai do centro da tela para frente
+                startX: this.canvas.width / 2,
+                startY: this.canvas.height / 2,
+                // Direção aleatória levemente para simular recuo
+                endX: this.canvas.width / 2 + (Math.random() * 10 - 5),
+                endY: this.canvas.height / 2 - 20 + (Math.random() * 4 - 2)
+            });
+        }
+
+        addSmokeParticles() {
+            // Adicionar várias partículas de fumaça
+            for (let i = 0; i < 8; i++) {
+                this.effects.push({
+                    type: 'smoke',
+                    life: 1.5 + Math.random() * 0.5,
+                    x: this.canvas.width / 2 + (Math.random() * 10 - 5),
+                    y: this.canvas.height / 2 + (Math.random() * 6 - 3),
+                    size: 3 + Math.random() * 4,
+                    speedX: (Math.random() - 0.5) * 2,
+                    speedY: -2 - Math.random() * 2,
+                    color: `rgba(150, 150, 150, ${0.3 + Math.random() * 0.2})`
+                });
+            }
+        }
+
+        update(deltaTime) {
+            // Atualizar tremor de tela
+            if (this.screenShakeIntensity > 0) {
+                this.screenShakeOffset = {
+                    x: (Math.random() - 0.5) * this.screenShakeIntensity,
+                    y: (Math.random() - 0.5) * this.screenShakeIntensity
+                };
+                this.screenShakeIntensity -= deltaTime * 10;
+            } else {
+                this.screenShakeOffset = { x: 0, y: 0 };
+            }
+
+            // Atualizar flash da arma
+            if (this.muzzleFlashIntensity > 0) {
+                this.muzzleFlashIntensity -= deltaTime * 5;
+            }
+
+            // Atualizar e remover efeitos expirados
+            for (let i = this.effects.length - 1; i >= 0; i--) {
+                const effect = this.effects[i];
+                effect.life -= deltaTime;
+
+                if (effect.life <= 0) {
+                    this.effects.splice(i, 1);
+                    continue;
+                }
+
+                // Atualizar posição das partículas de fumaça
+                if (effect.type === 'smoke') {
+                    effect.x += effect.speedX;
+                    effect.y += effect.speedY;
+                    // A fumaça sobe e se expande
+                    effect.size += deltaTime * 5;
+                    effect.speedX *= 0.95; // Resistência do ar
+                }
+            }
+        }
+
+        render() {
+            // Aplicar tremor de tela
+            this.ctx.save();
+            this.ctx.translate(this.screenShakeOffset.x, this.screenShakeOffset.y);
+
+            // Renderizar flash da arma
+            if (this.muzzleFlashIntensity > 0) {
+                this.renderMuzzleFlash();
+            }
+
+            // Renderizar todos os efeitos
+            this.effects.forEach(effect => {
+                if (effect.type === 'tracer') {
+                    this.renderTracer(effect);
+                } else if (effect.type === 'smoke') {
+                    this.renderSmoke(effect);
+                }
+            });
+
+            this.ctx.restore();
+        }
+
+        renderMuzzleFlash() {
+            const centerX = this.canvas.width / 2;
+            const centerY = this.canvas.height / 2;
+            const intensity = this.muzzleFlashIntensity;
+
+            // Flash principal (círculo brilhante)
+            const gradient = this.ctx.createRadialGradient(
+                centerX, centerY, 0,
+                centerX, centerY, 20 * intensity
+            );
+            gradient.addColorStop(0, `rgba(255, 255, 200, ${intensity * 0.8})`);
+            gradient.addColorStop(0.5, `rgba(255, 200, 50, ${intensity * 0.4})`);
+            gradient.addColorStop(1, `rgba(255, 150, 0, 0)`);
+
+            this.ctx.fillStyle = gradient;
+            this.ctx.beginPath();
+            this.ctx.arc(centerX, centerY, 20 * intensity, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            // Raios de luz
+            this.ctx.strokeStyle = `rgba(255, 200, 100, ${intensity * 0.6})`;
+            this.ctx.lineWidth = 1.5;
+
+            for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI * 2;
+                const length = 25 + Math.random() * 15;
+
+                this.ctx.beginPath();
+                this.ctx.moveTo(centerX, centerY);
+                this.ctx.lineTo(
+                    centerX + Math.cos(angle) * length * intensity,
+                    centerY + Math.sin(angle) * length * intensity
+                );
+                this.ctx.stroke();
+            }
+        }
+
+        renderTracer(effect) {
+            const alpha = effect.life; // O traço desaparece gradualmente
+
+            this.ctx.strokeStyle = effect.color;
+            this.ctx.lineWidth = effect.width;
+            this.ctx.lineCap = 'round';
+            this.ctx.globalAlpha = alpha;
+
+            this.ctx.beginPath();
+            this.ctx.moveTo(effect.startX, effect.startY);
+            this.ctx.lineTo(effect.endX, effect.endY);
+            this.ctx.stroke();
+
+            this.ctx.globalAlpha = 1;
+        }
+
+        renderSmoke(effect) {
+            const alpha = effect.life; // A fumaça desaparece gradualmente
+
+            this.ctx.fillStyle = effect.color;
+            this.ctx.globalAlpha = alpha * 0.7;
+
+            this.ctx.beginPath();
+            this.ctx.arc(effect.x, effect.y, effect.size, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            this.ctx.globalAlpha = 1;
+        }
+    }
     class Player {
         constructor(name, x, y) {
             this.group = 'default';
@@ -372,21 +400,63 @@
     class InputControle {
         constructor() {
             this.keys = {};
+            this.keysPrevious = {};
+            this.keysPressedThisFrame = {};
+
             document.addEventListener('keydown', (event) => {
+                // Previne comportamento padrão para teclas comuns de jogos
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'Escape'].includes(event.key)) {
+                    event.preventDefault();
+                }
+
                 this.keys[event.key] = true;
+
+                // Marca que a tecla foi pressionada neste frame
+                if (!this.keysPrevious[event.key]) {
+                    this.keysPressedThisFrame[event.key] = true;
+                }
             });
+
             document.addEventListener('keyup', (event) => {
                 this.keys[event.key] = false;
             });
         }
 
+        // Atualiza o estado das teclas (deve ser chamado no final de cada frame)
+        update() {
+            // Salva o estado atual para o próximo frame
+            this.keysPrevious = { ...this.keys };
+
+            // Limpa as teclas pressionadas neste frame
+            this.keysPressedThisFrame = {};
+        }
+
+        // Verifica se a tecla está pressionada no momento
         isKeyPressed(key) {
             return this.keys[key] || false;
         }
-        keydDown(key) {
 
+        // Verifica se a tecla foi pressionada exatamente neste frame
+        keyDown(key) {
+            return this.keysPressedThisFrame[key] || false;
+        }
+
+        // Verifica se a tecla foi liberada neste frame
+        keyUp(key) {
+            return this.keysPrevious[key] && !this.keys[key];
+        }
+
+        // Método auxiliar para verificar múltiplas teclas de uma vez
+        anyKeyPressed(keys) {
+            return keys.some(key => this.isKeyPressed(key));
+        }
+
+        // Método auxiliar para verificar se alguma tecla foi pressionada neste frame
+        anyKeyDown(keys) {
+            return keys.some(key => this.keyDown(key));
         }
     }
+
 
     class Raycast {
         constructor(x, y, angle, maxDistance, coliders) {
@@ -467,7 +537,17 @@
 
 <script src="/js/conectionSocket.js"></script>
 <script>
-
+    function ClosePauseMenu() {
+        $(".pause").css("display", "none");
+        sencible = $("#sencible").val() / 100;
+        pause = false;
+        console.log("sencible", sencible)
+        canvas3d.requestPointerLock();
+    }
+    function SetSurname() {
+        let nname = $("#surname").val();
+        player.surname = nname;
+    }
 </script>
 
 
@@ -476,10 +556,13 @@
     const ctx = canvas.getContext("2d");
     const canvas3d = document.getElementById("game3d");
     const ctx3d = canvas3d.getContext("2d");
-    let pause = false;
+    let pause = true;
     let savenumplayers = 0;
-
+    let sencible = 0.1;
     let centerY = 0;
+
+    const effectSystem = new ShootingEffectSystem(ctx3d, canvas3d);
+
 
     let tiro = false;
 
@@ -490,17 +573,21 @@
 
     //freeze mouse end no show him
     document.addEventListener("mousedown", (event) => {
-        if (!pause) {
+        if (!pause && !finishGame) {
             canvas3d.requestPointerLock();
             tiro = true;
+            effectSystem.triggerShot();
 
         }
         //alert("tiro")
     });
     document.addEventListener("mousemove", (event) => {
-        const movementX = event.movementX || 0;
-        player.Rotate(movementX * 0.1);
-        centerY -= event.movementY || 0;
+        if (!pause) {
+            const movementX = event.movementX || 0;
+            //console.log("player antes da sencible",player)
+            player.Rotate(movementX * sencible);
+            centerY -= (event.movementY || 0);
+        }
     });
 
     function Setup() {
@@ -559,8 +646,10 @@
 
             }
 
-            if (Input.isKeyPressed("Escape")) {
+            if (Input.keyUp("Escape")) {
                 pause = !pause;
+                $(".pause").css("display", "flex");
+                canvas3d.requestPointerLock();
                 console.log("pause");
             }
             let quantIwinn = 0;
@@ -568,24 +657,46 @@
                 //let allPlayer = [];
                 let allPlayer = [...playersInGame, player];
 
-                console.log(allPlayer)
+                //                console.log(allPlayer)
                 for (let otherPlayer of allPlayer) {
 
 
                     //se distancia do player para pointcontrol < 30 somar no grupo dele
                     if (Math.hypot(otherPlayer.x - p.x, otherPlayer.y - p.y) < 30) {
-                        console.log("other player in point control")
+                        {{!-- console.log("other player in point control") --}}
                         if (otherPlayer.group == 'blue') {
-                            p.influenceBlue += 1;
+                            p.influenceBlue += 60 / 500;
                             if (p.influenceBlue > 100) p.influenceBlue = 100;
-                            p.influenceRed -= 1;
+                            p.influenceRed -= 60 / 500;
                             if (p.influenceRed < 0) p.influenceRed = 0;
+
+                            if(player == otherPlayer){
+                               // console.log("player is otherPlayer soma vida? influenceblue",p.influenceBlue);
+                                if(p.influenceBlue>50){
+                                //console.log("player is otherPlayer soma vida?")
+                                    player.health+= player.health<200? 1:0;
+                                    $("span.hp").width(`${player.health}px`);
+                                }
+                            }
+
                         } else {
-                            p.influenceRed += 1;
+                            p.influenceRed += 60 / 500;
                             if (p.influenceRed > 100) p.influenceRed = 100;
-                            p.influenceBlue -= 1;
+                            p.influenceBlue -= 60 / 500;
                             if (p.influenceBlue < 0) p.influenceBlue = 0;
+
+                             if(player == otherPlayer){
+                                //console.log("player is otherPlayer soma vida? influencered",p.influenceRed)
+                                if(p.influenceRed>50){
+                               
+                                    player.health+= player.health<200? 1:0;
+                                    $("span.hp").width(`${player.health}px`);
+                                }
+                            }
                         }
+
+                        
+
                         //socket.emit("addPointControl", p);
                     }
                 }
@@ -625,6 +736,7 @@
             }
 
             player.draw(ctx);
+
             //otherPlayer.draw(ctx);
 
             //raycast
@@ -697,7 +809,7 @@
 
             }
 
-
+            effectSystem.render();
             tiro = false;
             //moviment
             if (Input.isKeyPressed("a")) {
@@ -715,6 +827,8 @@
 
             socket.emit("playerMovement", player);
 
+            Input.update();
+            effectSystem.update(1 / 60);
         }
     }
 

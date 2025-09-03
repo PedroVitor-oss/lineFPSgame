@@ -68,6 +68,7 @@ io.on("connection", (socket) => {
             socket.player.x = data.x;
             socket.player.y = data.y;
             socket.player.a = data.a;
+            socket.player.surname = data.surname;
             io.emit("newPlayer", players);
         }
     });
